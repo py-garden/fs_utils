@@ -2,7 +2,6 @@ import os
 import inspect
 from typing import Optional, List
 
-
 def get_absolute_path_of_where_this_script_exists() -> str:
     """
     returns the path to the script in which this function was called.
