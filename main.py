@@ -1,6 +1,25 @@
 import os
 import inspect
-from typing import Optional, List
+from typing import Optional, List, Callable
+
+def process_files_recursively(directory: str, filetypes: List[str], file_function: Callable[[str], None]) -> None:
+    """
+    Iterates over all files in a directory recursively, filters by a list of filetypes,
+    and applies a function to each file.
+
+    Args:
+        directory (str): The directory to search in.
+        filetypes (List[str]): A list of file extensions to filter (e.g., ['.txt', '.py']).
+        file_function (Callable[[str], None]): A function to run with the path to each file.
+    """
+    # Normalize file extensions to ensure they start with a dot.
+    normalized_filetypes = [ftype if ftype.startswith('.') else '.' + ftype for ftype in filetypes]
+
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if any(file.endswith(ftype) for ftype in normalized_filetypes):
+                full_path = os.path.join(root, file)
+                file_function(full_path)
 
 def get_absolute_path_of_where_this_script_exists() -> str:
     """
