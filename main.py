@@ -2,6 +2,23 @@ import os
 import inspect
 from typing import Optional, List, Callable
 
+def find_all_instances_of_file_in_directory_recursively(base_directory, target_filename) -> List[str]:
+    """
+    Recursively searches for all instances of a file with the given name in the specified directory.
+
+    Parameters:
+        base_directory (str): The root directory to start the search.
+        target_filename (str): The name of the file to search for.
+
+    Returns:
+        List[str]: A list of full paths to each matching file.
+    """
+    matches :List[str] = []
+    for root, dirs, files in os.walk(base_directory):
+        if target_filename in files:
+            matches.append(os.path.join(root, target_filename))
+    return matches
+
 def process_files_recursively(directory: str, filetypes: List[str], file_function: Callable[[str], None]) -> None:
     """
     Iterates over all files in a directory recursively, filters by a list of filetypes,
