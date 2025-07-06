@@ -2,6 +2,19 @@ import os
 import inspect
 from typing import Optional, List, Callable
 
+def concatenate_files(source_files, destination_file):
+    """
+    Concatenates the contents of source files into a destination file.
+
+    Parameters:
+        source_files (List[str]): List of paths to source files.
+        destination_file (str): Path to the destination file (overwritten if exists).
+    """
+    with open(destination_file, 'w', encoding='utf-8') as dest:
+        for src_path in source_files:
+            with open(src_path, 'r', encoding='utf-8') as src:
+                dest.write(src.read())
+
 def find_all_instances_of_file_in_directory_recursively(base_directory, target_filename) -> List[str]:
     """
     Recursively searches for all instances of a file with the given name in the specified directory.
