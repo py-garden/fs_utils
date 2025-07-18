@@ -7,41 +7,12 @@ import importlib.util
 import sys
 from typing import List, Callable
 import json
-
-BASE_DIR_LAST_MOD_FILE = ".base_dir_last_modified.json"
-
-# Function to get the modification times of all files in a directory
-def get_modification_times(directory):
-    mod_times = {}
-    for root, _, files in os.walk(directory):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            mod_times[filepath] = os.path.getmtime(filepath)
-    return mod_times
-
-def load_last_mod_times():
-    """Load the stored modification times from the last run"""
-    if os.path.exists(BASE_DIR_LAST_MOD_FILE):
-        with open(BASE_DIR_LAST_MOD_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_mod_times(mod_times):
-    """Save the current modification times for future comparison"""
-    with open(BASE_DIR_LAST_MOD_FILE, "w") as f:
-        json.dump(mod_times, f)
-
-def find_modified_files(last_mod_times, current_mod_times) -> List[str]:
-    """Compare the last known modification times with the current ones"""
-    modified_files = []
-    for filepath, current_time in current_mod_times.items():
-        last_time = last_mod_times.get(filepath)
-        # File is modified if it's new or has a different modification time
-        if last_time is None or current_time > last_time:
-            modified_files.append(filepath)
-    return modified_files
+from main import *
 
 def save_mod_times_for_base_dir(base_dir: str):
+    """
+    function that saves the modification times of all files (recursively) into a json file
+    """
     last_mod_times = load_last_mod_times()
     current_mod_times = get_modification_times(base_dir)
 

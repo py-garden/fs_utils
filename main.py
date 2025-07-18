@@ -1,8 +1,10 @@
 import os
 import inspect
-from typing import Optional, List, Callable
+import json
+from typing import Optional, List, Callable, Dict
+import re
 
-def concatenate_files(source_files, destination_file):
+def concatenate_files(source_files, destination_file) -> None:
     """
     Concatenates the contents of source files into a destination file.
 
@@ -89,3 +91,114 @@ def attempt_to_delete_file(file_path: str) -> bool:
         print(f"An error occurred while deleting '{file_path}': {e}")
     return False
 
+
+
+# NOTE: in the future I might want to do something like filename to a 
+# dictionary of checksum to day it was observed on or something.
+BASE_DIR_LAST_MOD_FILE = ".base_dir_last_modified.json"
+
+def make_regex_filter(whitelist: List[str], blacklist: List[str]) -> Callable[[str], bool]:
+    """
+    eg) path_filter = make_regex_filter([r"\.py$"], [r"test_", r"__pycache__"])
+    """
+    whitelist_re = [re.compile(r) for r in whitelist]
+    blacklist_re = [re.compile(r) for r in blacklist]
+
+    # true if path is allowed otherwise false
+    def _filter(path: str) -> bool:
+        if not any(r.search(path) for r in whitelist_re):
+            return False
+        if any(r.search(path) for r in blacklist_re):
+            return False
+        return True
+
+    return _filter
+
+
+def get_modification_times(
+    directory: str,
+    path_filter: Callable[[str], bool] = lambda _: True
+) -> Dict[str, float]:
+    """
+    Get the last modification times for all files in a directory recursively,
+    using a custom path filter to determine which files are included.
+
+    Args:
+        directory (str): The root directory to walk through.
+        path_filter (Callable[[str], bool], optional): A function that takes a file path
+            and returns True if the file should be included. Defaults to allowing all paths.
+
+    Returns:
+        Dict[str, float]: A dictionary mapping file paths to their last modification times.
+    """
+    mod_times = {}
+    for root, _, files in os.walk(directory):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            if path_filter(filepath):
+                mod_times[filepath] = os.path.getmtime(filepath)
+    return mod_times
+
+def load_last_mod_times(mod_times_path: str = BASE_DIR_LAST_MOD_FILE) -> Dict[str, float]:
+    """
+    Load the stored modification times from the last run.
+
+    Returns:
+        Dict[str, float]: A dictionary of previously recorded file modification times.
+                          Returns an empty dictionary if the file does not exist.
+    """
+    if os.path.exists(mod_times_path):
+        with open(mod_times_path, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_mod_times(mod_times: Dict[str, float], mod_times_path: str = BASE_DIR_LAST_MOD_FILE) -> None:
+    """
+    Save the current file modification times to a JSON file for later comparison.
+
+    Args:
+        mod_times (Dict[str, float]): Dictionary of file paths and their modification times.
+    """
+    with open(mod_times_path, "w") as f:
+        json.dump(mod_times, f)
+
+def find_modified_files(
+    last_mod_times: Dict[str, float],
+    current_mod_times: Dict[str, float]
+) -> List[str]:
+    """
+    Compare previous and current modification times to find updated or new files.
+
+    Args:
+        last_mod_times (Dict[str, float]): Previously saved file modification times.
+        current_mod_times (Dict[str, float]): Current file modification times.
+
+    Returns:
+        List[str]: List of file paths that are new or have been modified.
+    """
+    modified_files = []
+    for filepath, current_time in current_mod_times.items():
+        last_time = last_mod_times.get(filepath)
+        if last_time is None or current_time > last_time:
+            modified_files.append(filepath)
+    return modified_files
+
+def find_new_files(
+    last_mod_times: Dict[str, float],
+    current_mod_times: Dict[str, float]
+) -> List[str]:
+    """
+    Find newly created files by comparing previous and current file modification times.
+
+    Args:
+        last_mod_times (Dict[str, float]): Previously saved file modification times.
+        current_mod_times (Dict[str, float]): Current file modification times.
+
+    Returns:
+        List[str]: List of file paths that are new (i.e. did not exist before).
+    """
+    new_files = []
+    for filepath in current_mod_times:
+        if filepath not in last_mod_times:
+            new_files.append(filepath)
+    return new_files
