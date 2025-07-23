@@ -3,6 +3,38 @@ import inspect
 import json
 from typing import Optional, List, Callable, Dict
 import re
+from pathlib import Path
+
+def path_ends_with_filename(file_path: str, file_name: str) -> bool:
+    """
+    Returns True if the file_path ends with the given file_name.
+    """
+    return os.path.basename(file_path) == file_name
+
+def strip_first_path_component(path: str) -> str:
+    """
+    Removes the first component of a given path.
+    """
+    parts = Path(path).parts
+    if len(parts) <= 1:
+        return ''
+    return str(Path(*parts[1:]))
+
+def strip_last_path_component(path: str) -> str:
+    """
+    Removes the last component of a given path.
+    Returns an empty string if there is no component to remove.
+    """
+    parts = Path(path).parts
+    if len(parts) <= 1:
+        return ''
+    return str(Path(*parts[:-1]))
+
+def get_last_path_component(path: str) -> str:
+    """
+    Returns the last component of a path (file or directory name).
+    """
+    return os.path.basename(path.rstrip('/\\'))
 
 def concatenate_files(source_files, destination_file) -> None:
     """
@@ -16,6 +48,41 @@ def concatenate_files(source_files, destination_file) -> None:
         for src_path in source_files:
             with open(src_path, 'r', encoding='utf-8') as src:
                 dest.write(src.read())
+
+def find_files_matching_regex(
+    base_directory: str,
+    pattern: str,
+    max_depth: int = None
+) -> List[str]:
+    """
+    Recursively search for all files matching a regex pattern within a directory, 
+    optionally up to a specified depth.
+
+    Parameters:
+        base_directory (str): The root directory to start the search.
+        pattern (str): A regex pattern to match filenames.
+        max_depth (int, optional): The maximum directory depth to recurse. 
+                                   None means unlimited.
+
+    Returns:
+        List[str]: A list of full paths to each matching file.
+    """
+    regex = re.compile(pattern)
+    matches: List[str] = []
+    base_depth = base_directory.rstrip(os.path.sep).count(os.path.sep)
+
+    for root, dirs, files in os.walk(base_directory):
+        current_depth = root.count(os.path.sep) - base_depth
+        if max_depth is not None and current_depth > max_depth:
+            # prevent deeper traversal
+            dirs[:] = []
+            continue
+
+        for filename in files:
+            if regex.fullmatch(filename):
+                matches.append(os.path.join(root, filename))
+
+    return matches
 
 def find_all_instances_of_file_in_directory_recursively(base_directory, target_filename) -> List[str]:
     """
