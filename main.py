@@ -84,7 +84,7 @@ def find_files_matching_regex(
 
     return matches
 
-def find_all_instances_of_file_in_directory_recursively(base_directory, target_filename) -> List[str]:
+def find_all_instances_of_file_in_directory_recursively(base_directory: str, target_filename: str) -> List[str]:
     """
     Recursively searches for all instances of a file with the given name in the specified directory.
 
