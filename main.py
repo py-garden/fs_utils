@@ -3,7 +3,10 @@ import inspect
 import json
 from typing import Optional, List, Callable, Dict
 import re
+import sys
+import shutil
 from pathlib import Path
+
 
 def path_ends_with_filename(file_path: str, file_name: str) -> bool:
     """
@@ -11,14 +14,16 @@ def path_ends_with_filename(file_path: str, file_name: str) -> bool:
     """
     return os.path.basename(file_path) == file_name
 
+
 def strip_first_path_component(path: str) -> str:
     """
     Removes the first component of a given path.
     """
     parts = Path(path).parts
     if len(parts) <= 1:
-        return ''
+        return ""
     return str(Path(*parts[1:]))
+
 
 def strip_last_path_component(path: str) -> str:
     """
@@ -27,14 +32,16 @@ def strip_last_path_component(path: str) -> str:
     """
     parts = Path(path).parts
     if len(parts) <= 1:
-        return ''
+        return ""
     return str(Path(*parts[:-1]))
+
 
 def get_last_path_component(path: str) -> str:
     """
     Returns the last component of a path (file or directory name).
     """
-    return os.path.basename(path.rstrip('/\\'))
+    return os.path.basename(path.rstrip("/\\"))
+
 
 def concatenate_files(source_files, destination_file) -> None:
     """
@@ -44,24 +51,23 @@ def concatenate_files(source_files, destination_file) -> None:
         source_files (List[str]): List of paths to source files.
         destination_file (str): Path to the destination file (overwritten if exists).
     """
-    with open(destination_file, 'w', encoding='utf-8') as dest:
+    with open(destination_file, "w", encoding="utf-8") as dest:
         for src_path in source_files:
-            with open(src_path, 'r', encoding='utf-8') as src:
+            with open(src_path, "r", encoding="utf-8") as src:
                 dest.write(src.read())
 
+
 def find_files_matching_regex(
-    base_directory: str,
-    pattern: str,
-    max_depth: int = None
+    base_directory: str, pattern: str, max_depth: int = None
 ) -> List[str]:
     """
-    Recursively search for all files matching a regex pattern within a directory, 
+    Recursively search for all files matching a regex pattern within a directory,
     optionally up to a specified depth.
 
     Parameters:
         base_directory (str): The root directory to start the search.
         pattern (str): A regex pattern to match filenames.
-        max_depth (int, optional): The maximum directory depth to recurse. 
+        max_depth (int, optional): The maximum directory depth to recurse.
                                    None means unlimited.
 
     Returns:
@@ -84,7 +90,10 @@ def find_files_matching_regex(
 
     return matches
 
-def find_all_instances_of_file_in_directory_recursively(base_directory: str, target_filename: str) -> List[str]:
+
+def find_all_instances_of_file_in_directory_recursively(
+    base_directory: str, target_filename: str
+) -> List[str]:
     """
     Recursively searches for all instances of a file with the given name in the specified directory.
 
@@ -95,13 +104,16 @@ def find_all_instances_of_file_in_directory_recursively(base_directory: str, tar
     Returns:
         List[str]: A list of full paths to each matching file.
     """
-    matches :List[str] = []
+    matches: List[str] = []
     for root, dirs, files in os.walk(base_directory):
         if target_filename in files:
             matches.append(os.path.join(root, target_filename))
     return matches
 
-def process_files_recursively(directory: str, filetypes: List[str], file_function: Callable[[str], None]) -> None:
+
+def process_files_recursively(
+    directory: str, filetypes: List[str], file_function: Callable[[str], None]
+) -> None:
     """
     Iterates over all files in a directory recursively, filters by a list of filetypes,
     and applies a function to each file.
@@ -112,13 +124,16 @@ def process_files_recursively(directory: str, filetypes: List[str], file_functio
         file_function (Callable[[str], None]): A function to run with the path to each file.
     """
     # Normalize file extensions to ensure they start with a dot.
-    normalized_filetypes = [ftype if ftype.startswith('.') else '.' + ftype for ftype in filetypes]
+    normalized_filetypes = [
+        ftype if ftype.startswith(".") else "." + ftype for ftype in filetypes
+    ]
 
     for root, _, files in os.walk(directory):
         for file in files:
             if any(file.endswith(ftype) for ftype in normalized_filetypes):
                 full_path = os.path.join(root, file)
                 file_function(full_path)
+
 
 def get_absolute_path_of_where_this_script_exists() -> str:
     """
@@ -127,15 +142,17 @@ def get_absolute_path_of_where_this_script_exists() -> str:
     # get the caller's file path, which will be `a.py` in this case.
     caller_frame = inspect.stack()[1]
     caller_file = caller_frame[0].f_globals["__file__"]
-    
+
     # Get the directory of the caller's script
     return os.path.dirname(os.path.abspath(caller_file))
+
 
 def recursively_find_directory(search_dir: str, dir_to_find: str) -> Optional[str]:
     for root, dirs, files in os.walk(search_dir):
         if dir_to_find in dirs:
             return os.path.join(root, dir_to_find)
     return None
+
 
 def attempt_to_delete_files(file_paths: List[str]) -> bool:
     all_succeeded = True
@@ -144,6 +161,7 @@ def attempt_to_delete_files(file_paths: List[str]) -> bool:
         if not success:
             all_succeeded = False
     return all_succeeded
+
 
 def attempt_to_delete_file(file_path: str) -> bool:
     try:
@@ -159,12 +177,14 @@ def attempt_to_delete_file(file_path: str) -> bool:
     return False
 
 
-
-# NOTE: in the future I might want to do something like filename to a 
+# NOTE: in the future I might want to do something like filename to a
 # dictionary of checksum to day it was observed on or something.
 BASE_DIR_LAST_MOD_FILE = ".base_dir_last_modified.json"
 
-def make_regex_filter(whitelist: List[str], blacklist: List[str]) -> Callable[[str], bool]:
+
+def make_regex_filter(
+    whitelist: List[str], blacklist: List[str]
+) -> Callable[[str], bool]:
     """
     eg) path_filter = make_regex_filter([r"\.py$"], [r"test_", r"__pycache__"])
     """
@@ -183,8 +203,7 @@ def make_regex_filter(whitelist: List[str], blacklist: List[str]) -> Callable[[s
 
 
 def get_modification_times(
-    directory: str,
-    path_filter: Callable[[str], bool] = lambda _: True
+    directory: str, path_filter: Callable[[str], bool] = lambda _: True
 ) -> Dict[str, float]:
     """
     Get the last modification times for all files in a directory recursively,
@@ -206,7 +225,10 @@ def get_modification_times(
                 mod_times[filepath] = os.path.getmtime(filepath)
     return mod_times
 
-def load_last_mod_times(mod_times_path: str = BASE_DIR_LAST_MOD_FILE) -> Dict[str, float]:
+
+def load_last_mod_times(
+    mod_times_path: str = BASE_DIR_LAST_MOD_FILE,
+) -> Dict[str, float]:
     """
     Load the stored modification times from the last run.
 
@@ -219,7 +241,10 @@ def load_last_mod_times(mod_times_path: str = BASE_DIR_LAST_MOD_FILE) -> Dict[st
             return json.load(f)
     return {}
 
-def save_mod_times(mod_times: Dict[str, float], mod_times_path: str = BASE_DIR_LAST_MOD_FILE) -> None:
+
+def save_mod_times(
+    mod_times: Dict[str, float], mod_times_path: str = BASE_DIR_LAST_MOD_FILE
+) -> None:
     """
     Save the current file modification times to a JSON file for later comparison.
 
@@ -229,9 +254,9 @@ def save_mod_times(mod_times: Dict[str, float], mod_times_path: str = BASE_DIR_L
     with open(mod_times_path, "w") as f:
         json.dump(mod_times, f)
 
+
 def find_modified_files(
-    last_mod_times: Dict[str, float],
-    current_mod_times: Dict[str, float]
+    last_mod_times: Dict[str, float], current_mod_times: Dict[str, float]
 ) -> List[str]:
     """
     Compare previous and current modification times to find updated or new files.
@@ -250,9 +275,9 @@ def find_modified_files(
             modified_files.append(filepath)
     return modified_files
 
+
 def find_new_files(
-    last_mod_times: Dict[str, float],
-    current_mod_times: Dict[str, float]
+    last_mod_times: Dict[str, float], current_mod_times: Dict[str, float]
 ) -> List[str]:
     """
     Find newly created files by comparing previous and current file modification times.
@@ -269,3 +294,73 @@ def find_new_files(
         if filepath not in last_mod_times:
             new_files.append(filepath)
     return new_files
+
+
+def get_shell_rc():
+    """Find the user's shell rc file to modify PATH."""
+    home = Path.home()
+    for rc_name in [".zshrc", ".bashrc", ".bash_profile"]:
+        rc_file = home / rc_name
+        if rc_file.exists():
+            return rc_file
+    return None
+
+
+def ensure_path_in_shell_rc(target_dir: Path):
+    """Add ~/.local/bin to PATH in user's shell rc file if not already present."""
+    rc_file = get_shell_rc()
+    if not rc_file:
+        print("Could not find a shell rc file to update PATH.")
+        return
+    export_line = f'export PATH="{target_dir}:$PATH"'
+    with rc_file.open("a+") as f:
+        f.seek(0)
+        content = f.read()
+        if export_line not in content:
+            f.write(f"\n# Added by CLI installer\n{export_line}\n")
+            print(f"Added {target_dir} to PATH in {rc_file}")
+        else:
+            print(f"PATH already contains {target_dir}")
+
+
+def install_cli(source: str, name: str, use_symlink: bool = False):
+    """Install an arbitrary executable into ~/.local/bin"""
+    source_path = Path(source)
+    if not source_path.exists():
+        print(f"Source file '{source}' does not exist.")
+        sys.exit(1)
+
+    target_dir = Path.home() / ".local" / "bin"
+    target_path = target_dir / name
+
+    # Create target dir if missing
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    # Remove old version
+    if target_path.exists():
+        target_path.unlink()
+
+    # Copy or symlink
+    if use_symlink:
+        target_path.symlink_to(source_path)
+        print(f"Symlinked {source_path} → {target_path}")
+    else:
+        shutil.copy2(source, target_path)
+        target_path.chmod(0o755)
+        print(f"Installed {source_path.name} → {target_path}")
+
+    # Ensure PATH includes ~/.local/bin
+    if str(target_dir) not in os.environ["PATH"].split(os.pathsep):
+        ensure_path_in_shell_rc(target_dir)
+        print("Restart your terminal or run:")
+        print(f'export PATH="{target_dir}:$PATH"')
+
+
+def uninstall_cli(name: str):
+    """Remove an executable from ~/.local/bin"""
+    target_path = Path.home() / ".local" / "bin" / name
+    if target_path.exists():
+        target_path.unlink()
+        print(f"Removed {target_path}")
+    else:
+        print(f"{name} is not installed in ~/.local/bin")
