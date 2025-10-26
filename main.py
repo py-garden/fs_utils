@@ -1,7 +1,7 @@
 import os
 import inspect
 import json
-from typing import Optional, List, Callable, Dict
+from typing import Optional, List, Callable, Dict, Iterable
 import re
 import sys
 import shutil
@@ -186,7 +186,7 @@ def make_regex_filter(
     whitelist: List[str], blacklist: List[str]
 ) -> Callable[[str], bool]:
     """
-    eg) path_filter = make_regex_filter([r"\.py$"], [r"test_", r"__pycache__"])
+    eg) path_filter = make_regex_filter([r"\\.py$"], [r"test_", r"__pycache__"])
     """
     whitelist_re = [re.compile(r) for r in whitelist]
     blacklist_re = [re.compile(r) for r in blacklist]
@@ -277,23 +277,21 @@ def find_modified_files(
 
 
 def find_new_files(
-    last_mod_times: Dict[str, float], current_mod_times: Dict[str, float]
+    previous_paths: Iterable[str], current_paths: Iterable[str]
 ) -> List[str]:
     """
-    Find newly created files by comparing previous and current file modification times.
+    Find newly created files by comparing previous and current file path lists.
 
     Args:
-        last_mod_times (Dict[str, float]): Previously saved file modification times.
-        current_mod_times (Dict[str, float]): Current file modification times.
+        previous_paths (Iterable[str]): Paths that existed previously.
+        current_paths (Iterable[str]): Currently detected file paths.
 
     Returns:
-        List[str]: List of file paths that are new (i.e. did not exist before).
+        List[str]: List of file paths that are new (i.e. not present in previous_paths).
     """
-    new_files = []
-    for filepath in current_mod_times:
-        if filepath not in last_mod_times:
-            new_files.append(filepath)
-    return new_files
+    previous_set = set(previous_paths)
+    current_set = set(current_paths)
+    return sorted(current_set - previous_set)
 
 
 def get_shell_rc():
